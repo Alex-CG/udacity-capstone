@@ -1,2 +1,2 @@
-# udacity-capstone
+# udacity-devops-eng-capstone
 Capstone - Project 5
