@@ -70,11 +70,6 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             echo "123"
-
-      - persist_to_workspace:
-          root: .circleci/ansible
-          paths:
-            - inventory.txt
       - destroy-environment
 
   configure-infrastructure:
