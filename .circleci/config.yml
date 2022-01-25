@@ -67,7 +67,7 @@ jobs:
             
   scan-app:
     docker:
-      - image: circleci/node:13.8.0
+      - image: python:3.7.3-stretch
     steps:
       - checkout
       - restore_cache:
