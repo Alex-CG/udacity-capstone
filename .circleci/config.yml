@@ -22,31 +22,50 @@ commands:
             echo "123"
 
 jobs:
-  build-backend:
+  build-app:
     docker:
       - image: circleci/node:13.8.0
+    working_directory: ~/repo
     steps:
       - checkout
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
       - run:
-          name: Back-end build
+          name: install dependencies
           command: |
-            echo "123"
+            make setup
+            . venv/bin/activate
+            make install
       - save_cache:
-          paths: [backend/node_modules]
-          key: backend-build
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+      # run lint!
+      - run:
+          name: run lint
+          command: |
+            . venv/bin/activate
+            make lint 
 
-  test-backend:
+  test-app:
     docker:
       - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
       - run:
           command: |
-            echo "123"
+            make test
             
-  scan-backend:
+  scan-app:
     docker:
       - image: circleci/node:13.8.0
     steps:
@@ -91,27 +110,7 @@ jobs:
             echo "123"
       - destroy-environment
 
-  run-migrations:
-    docker:
-      - image: circleci/node:13.8.0
-        user: root
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            echo "123"
-      - run:
-          name: Run migrations
-          command: |
-            echo "123"
-      - run:
-          name: Send migration results to memstash
-          command: |
-            echo "123"
-      - destroy-environment
-
-  deploy-backend:
+  deploy-app:
     docker:
       - image: cimg/python:3.10.0-node
         user: root
@@ -191,24 +190,22 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-backend
-      - test-backend:
-          requires: [build-backend]
-      - scan-backend:
-          requires: [build-backend]
+      - build-app
+      - test-app:
+          requires: [build-app]
+      - scan-app:
+          requires: [build-app]
       - deploy-infrastructure:
-          requires: [test-backend, scan-backend]
+          requires: [test-app, scan-app]
           filters:
             branches:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      - run-migrations:
+      - deploy-app:
           requires: [configure-infrastructure]
-      - deploy-backend:
-          requires: [run-migrations]
       - smoke-test:
-          requires: [deploy-backend]
+          requires: [deploy-app]
       - cloudfront-update:
           requires: [smoke-test]
       - cleanup:
