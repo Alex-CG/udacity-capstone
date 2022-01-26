@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 app = Flask(__name__)
 LOG = create_logger(app)
 LOG.setLevel(logging.INFO)
-all_addresses = '0.0.0.0'
+all_addresses = '127.0.0.1'
 
 def scale(payload):
     """Scales Payload"""
