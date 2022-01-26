@@ -70,13 +70,9 @@ jobs:
       - image: python:3.7.3-stretch
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
       - run:
           command: |
+            make install
             make scan
 
   deploy-infrastructure:
