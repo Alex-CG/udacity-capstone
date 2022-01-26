@@ -85,7 +85,7 @@ jobs:
       - run:
           name: setup and scan
           command: |
-            make setup
+            . venv/bin/activate
             make scan
       - save_cache:
           paths:
