@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 app = Flask(__name__)
 LOG = create_logger(app)
 LOG.setLevel(logging.INFO)
+all_addresses = '0.0.0.0'
 
 def scale(payload):
     """Scales Payload"""
@@ -69,4 +70,4 @@ def predict():
 if __name__ == "__main__":
     # load pretrained model as clf
     clf = joblib.load("./model_data/boston_housing_prediction.joblib")
-    app.run(host='0.0.0.0', port=80, debug=False) # specify port=80
+    app.run(host=all_addresses, port=80, debug=False) # specify port=80
