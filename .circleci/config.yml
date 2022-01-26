@@ -43,7 +43,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - restore-deps-cache
+      - restore-cache-deps
       - run:
           name: install dependencies
           command: |
@@ -62,7 +62,7 @@ jobs:
       - image: python:3.7.3-stretch
     steps:
       - checkout
-      - restore-deps-cache
+      - restore-cache-deps
       - save-cache-deps
       - run:
           command: |
@@ -74,7 +74,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - restore-deps-cache
+      - restore-cache-deps
       - save-cache-deps
       - run:
           name: scan
