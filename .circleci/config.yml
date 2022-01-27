@@ -8,12 +8,17 @@ orbs:
 commands:
   destroy-environment:
     description: Destroy front-end and back-end cloudformation stacks
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
     steps:
       - run:
           name: Destroy backend
           when: on_fail
           command: |
-            echo "123"
+            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_DEFAULT_REGION
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
@@ -135,6 +140,8 @@ jobs:
           nodes-max: 2
           ssh-access: false
           ssh-public-key: ''
+      - destroy-environment:
+          cluster-name: my-eks-demo
 
   deploy-infrastructure:
     docker:
