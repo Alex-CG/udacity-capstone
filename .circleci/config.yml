@@ -156,7 +156,6 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             echo "123"
-      - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -175,7 +174,6 @@ jobs:
           name: Configure server
           command: |
             echo "123"
-      - destroy-environment
 
   deploy-app:
     docker:
@@ -211,7 +209,6 @@ jobs:
           name: Deploy backend
           command: |
             echo "123"
-      - destroy-environment
       - revert-migrations
 
   smoke-test:
@@ -227,7 +224,6 @@ jobs:
           name: Backend smoke test.
           command: |
             echo "123"
-      - destroy-environment
       - revert-migrations
 
   cloudfront-update:
@@ -239,7 +235,6 @@ jobs:
           name: Update cloudfront distribution
           command: |
             echo "123"
-      - destroy-environment
       - revert-migrations
 
   cleanup:
@@ -251,7 +246,6 @@ jobs:
           name: Get old stack workflow id and Remove old stacks and files
           command: |
             echo "123"
-      - destroy-environment
       - revert-migrations
 
 workflows:
