@@ -6,8 +6,8 @@ orbs:
   aws-eks: circleci/aws-eks@0.2.3
 
 commands:
-  destroy-environment:
-    description: Destroy front-end and back-end cloudformation stacks
+  destroy-cloud-env:
+    description: Destroy cloud stuff
     parameters:
       cluster-name:
         description: |
@@ -15,19 +15,14 @@ commands:
         type: string
     steps:
       - run:
+          when: on_fail
+          command: |
+            pip install awscli
+      - run:
           name: Destroy backend
           when: on_fail
           command: |
             aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_DEFAULT_REGION
-
-  revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
-    steps:
-      - run:
-          name: Revert migrations
-          when: on_fail
-          command: |
-            echo "123"
 
   restore-cache-deps:
     steps:
@@ -140,8 +135,8 @@ jobs:
           nodes-max: 2
           ssh-access: false
           ssh-public-key: ''
-      - destroy-environment:
-          cluster-name: my-eks-demo
+      - destroy-cloud-env:
+          cluster-name: << parameters.cluster-name >>
 
   deploy-infrastructure:
     docker:
@@ -209,7 +204,6 @@ jobs:
           name: Deploy backend
           command: |
             echo "123"
-      - revert-migrations
 
   smoke-test:
     docker:
@@ -224,7 +218,6 @@ jobs:
           name: Backend smoke test.
           command: |
             echo "123"
-      - revert-migrations
 
   cloudfront-update:
     docker:
@@ -235,18 +228,14 @@ jobs:
           name: Update cloudfront distribution
           command: |
             echo "123"
-      - revert-migrations
 
   cleanup:
     docker:
       - image: amazon/aws-cli
     steps:
-      - checkout
       - run:
-          name: Get old stack workflow id and Remove old stacks and files
           command: |
             echo "123"
-      - revert-migrations
 
 workflows:
   default:
