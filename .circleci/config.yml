@@ -96,7 +96,7 @@ jobs:
           image: alexcgdocker/ml-app-capstone
       - run:
           command: |
-            echo "Digest is: $(</tmp/digest.txt>)"
+            echo "Digest is: $(</tmp/digest.txt)"
 
   deploy-infrastructure:
     docker:
