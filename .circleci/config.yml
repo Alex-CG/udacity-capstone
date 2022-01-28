@@ -22,7 +22,8 @@ commands:
           name: Destroy backend
           when: on_fail
           command: |
-            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_DEFAULT_REGION
+            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_REGION
+            aws cloudformation delete-stack --stack-name eksctl-<< parameters.cluster-name >>-cluster
 
   restore-cache-deps:
     steps:
