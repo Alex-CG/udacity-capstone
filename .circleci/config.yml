@@ -101,44 +101,6 @@ jobs:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
 
-  create-small-cluster:
-    executor: aws-eks/python3
-    parameters:
-      cluster-name:
-        description: |
-          Name of the EKS cluster
-        type: string
-    steps:
-      - checkout
-      - aws-eks/install-aws-iam-authenticator:
-          release-tag: ''
-      - run:
-          name: Install the eksctl tool
-          command: |
-            if which eksctl > /dev/null; then
-            echo "eksctl is already installed"
-            exit 0
-            fi
-            mkdir -p eksctl_download
-            curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C eksctl_download
-            chmod +x eksctl_download/eksctl
-            SUDO=""
-            if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
-            SUDO="sudo"
-            fi
-            $SUDO mv eksctl_download/eksctl /usr/local/bin/
-            rmdir eksctl_download
-      - aws-eks/create-cluster:
-          cluster-name: << parameters.cluster-name >>
-          skip-kubectl-install: false
-          verbose: 3
-          node-type: t2.micro
-          nodes-max: 2
-          ssh-access: false
-          ssh-public-key: ''
-      - destroy-cloud-env:
-          cluster-name: << parameters.cluster-name >>
-
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -238,6 +200,60 @@ jobs:
           command: |
             echo "123"
 
+  create-eks-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+    steps:
+      - checkout
+      - aws-eks/install-aws-iam-authenticator:
+          release-tag: ''
+      - run:
+          name: Install the eksctl tool
+          command: |
+            if which eksctl > /dev/null; then
+            echo "eksctl is already installed"
+            exit 0
+            fi
+            mkdir -p eksctl_download
+            curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C eksctl_download
+            chmod +x eksctl_download/eksctl
+            SUDO=""
+            if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
+            SUDO="sudo"
+            fi
+            $SUDO mv eksctl_download/eksctl /usr/local/bin/
+            rmdir eksctl_download
+      - aws-eks/create-cluster:
+          cluster-name: << parameters.cluster-name >>
+          skip-kubectl-install: false
+          verbose: 3
+          node-type: t2.small
+          nodes-max: 2
+          ssh-access: false
+          ssh-public-key: ''
+      - destroy-cloud-env:
+          cluster-name: << parameters.cluster-name >>
+
+  test-eks-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+    steps:
+      - kubernetes/install
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+      - run:
+          name: Kube cluster
+          command: |
+            kubectl get services
+
 workflows:
   default:
     jobs:
@@ -248,12 +264,8 @@ workflows:
           requires: [build-app]
       - build-push-docker:
           requires: [test-app, scan-app]
-      - create-small-cluster:
-          cluster-name: my-eks-demo-${CIRCLE_WORKFLOW_ID:0:7}
-          requires:
-            - build-push-docker
       - deploy-infrastructure:
-          requires: [create-small-cluster]
+          requires: [build-push-docker]
           filters:
             branches:
               only: [master]
@@ -267,3 +279,15 @@ workflows:
           requires: [smoke-test]
       - cleanup:
           requires: [cloudfront-update]
+  deployment:
+    jobs:
+      - create-eks-cluster:
+          cluster-name: my-eks-demo
+      - test-eks-cluster:
+          cluster-name: my-eks-demo
+          requires:
+            - aws-eks/create-cluster
+      - aws-eks/delete-cluster:
+          cluster-name: my-eks-demo
+          requires:
+            - test-eks-cluster
