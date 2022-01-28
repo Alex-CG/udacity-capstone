@@ -22,7 +22,7 @@ commands:
           name: Destroy backend
           when: on_fail
           command: |
-            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_REGION
+            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_DEFAULT_REGION
             aws cloudformation delete-stack --stack-name eksctl-<< parameters.cluster-name >>-cluster
 
   restore-cache-deps:
@@ -249,7 +249,7 @@ workflows:
       - build-push-docker:
           requires: [test-app, scan-app]
       - create-small-cluster:
-          cluster-name: my-eks-demo
+          cluster-name: my-eks-demo-${CIRCLE_WORKFLOW_ID:0:7}
           requires:
             - build-push-docker
       - deploy-infrastructure:
