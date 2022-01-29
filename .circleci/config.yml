@@ -235,8 +235,6 @@ jobs:
           nodes-max: 2
           ssh-access: false
           ssh-public-key: ''
-      - destroy-cloud-env:
-          cluster-name: << parameters.cluster-name >>
 
   test-eks-cluster:
     executor: aws-eks/python3
