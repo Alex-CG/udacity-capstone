@@ -6,24 +6,6 @@ orbs:
   aws-eks: circleci/aws-eks@0.2.3
 
 commands:
-  destroy-cloud-env:
-    description: Destroy cloud stuff
-    parameters:
-      cluster-name:
-        description: |
-          Name of the EKS cluster
-        type: string
-    steps:
-      - run:
-          when: on_fail
-          command: |
-            pip install awscli
-      - run:
-          name: Destroy backend
-          when: on_fail
-          command: |
-            aws eks delete-cluster --name << parameters.cluster-name >>  --region $AWS_DEFAULT_REGION
-            aws cloudformation delete-stack --stack-name eksctl-<< parameters.cluster-name >>-cluster
 
   restore-cache-deps:
     steps:
@@ -58,9 +40,10 @@ jobs:
       - run:
           name: run lint
           command: |
+            . venv/bin/activate
             make lint
       - save-cache-deps
-      
+
   test-app:
     docker:
       - image: python:3.7.3-stretch
@@ -71,7 +54,7 @@ jobs:
       - run:
           command: |
             make test
-            
+
   scan-app:
     docker:
       - image: python:3.7.3-stretch
