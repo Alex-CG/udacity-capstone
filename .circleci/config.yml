@@ -41,6 +41,20 @@ commands:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
 jobs:
+  lint-app:
+    docker:
+      - image: python:3.7.3-stretch
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore-cache-deps
+      - run:
+          name: run lint
+          command: |
+            . venv/bin/activate
+            make lint
+      - save-cache-deps
+
   build-app:
     docker:
       - image: python:3.7.3-stretch
@@ -55,11 +69,6 @@ jobs:
             . venv/bin/activate
             make install
       - save-cache-deps
-      - run:
-          name: run lint
-          command: |
-            . venv/bin/activate
-            make lint
 
   test-app:
     docker:
@@ -86,7 +95,7 @@ jobs:
             . venv/bin/activate
             make scan
 
-  build-push-docker:
+  build-push-image:
     executor: docker/docker
     steps:
       - setup_remote_docker
@@ -101,104 +110,56 @@ jobs:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
 
-  deploy-infrastructure:
-    docker:
-      - image: amazon/aws-cli
+  test-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+    steps:
+      - kubernetes/install
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+      - run:
+          name: Kube cluster
+          command: |
+            kubectl get services
+
+  run-deployment:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            echo "123"
-      - run:
-          name: Add back-end ip to ansible inventory
-          command: |
-            echo "123"
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+      - kubernetes/create-or-update-resource:
+          get-rollout-status: true
+          resource-file-path: deploy/eks-sample-deplyment.yml
+          resource-name: eks-sample-linux-deployment
 
-  configure-infrastructure:
-    docker:
-      - image: python:3.7-alpine3.11
+  test-deployment:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
     steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: ["81:79:32:77:70:22:b5:84:ee:80:05:52:e2:44:48:d8"] # You can get this ID in the section where you registered the SSH Key
-      - attach_workspace:
-          at: /tmp/.circleci/ansible
+      - kubernetes/install
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
       - run:
-          name: Install dependencies
+          name: Kube cluster
           command: |
-            echo "123"
-      - run:
-          name: Configure server
-          command: |
-            echo "123"
-
-  deploy-app:
-    docker:
-      - image: cimg/python:3.10.0-node
-        user: root
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: ["81:79:32:77:70:22:b5:84:ee:80:05:52:e2:44:48:d8"] # You can get this ID in the section where you registered the SSH Key
-      - attach_workspace:
-          at: /tmp/.circleci/ansible
-      - run:
-          name: install dependencies
-          command: |
-            echo "123"
-      - run:
-          name: install node modules
-          command: |
-            echo "123"
-      - run:
-          name: build backend dist
-          command: |
-            echo "123"
-      - run:
-          name: build zip file
-          command: |
-            echo "123"
-      - run:
-          name: add ansible config
-          command: |
-            echo "123"
-      - run:
-          name: Deploy backend
-          command: |
-            echo "123"
-
-  smoke-test:
-    docker:
-      - image: python:3.7-alpine3.11
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            echo "123"
-      - run:
-          name: Backend smoke test.
-          command: |
-            echo "123"
-
-  cloudfront-update:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run:
-          name: Update cloudfront distribution
-          command: |
-            echo "123"
-
-  cleanup:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - run:
-          command: |
-            echo "123"
+            kubectl get svc
+            kubectl get nodes
+            kubectl get deployment
 
   create-eks-cluster:
     executor: aws-eks/python3
@@ -231,7 +192,7 @@ jobs:
           cluster-name: << parameters.cluster-name >>
           skip-kubectl-install: false
           verbose: 3
-          node-type: t2.small
+          node-type: t3.large
           nodes-max: 2
           ssh-access: false
           ssh-public-key: ''
@@ -255,28 +216,22 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-app
+      - lint-app
+      - build-app:
+          requires: [lint-app]
       - test-app:
           requires: [build-app]
       - scan-app:
           requires: [build-app]
-      - build-push-docker:
+      - build-push-image:
           requires: [test-app, scan-app]
-      - deploy-infrastructure:
-          requires: [build-push-docker]
-          filters:
-            branches:
-              only: [master]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - deploy-app:
-          requires: [configure-infrastructure]
-      - smoke-test:
-          requires: [deploy-app]
-      - cloudfront-update:
-          requires: [smoke-test]
-      - cleanup:
-          requires: [cloudfront-update]
+      - test-cluster:
+          cluster-name: my-eks-demo
+          requires: [build-push-image]
+      - run-deployment:
+          requires: [test-cluster]
+      - test-deployment:
+          requires: [run-deployment]
   deployment:
     jobs:
       - create-eks-cluster:
@@ -284,6 +239,6 @@ workflows:
       - test-eks-cluster:
           cluster-name: my-eks-demo
           requires: [create-eks-cluster]
-      # - aws-eks/delete-cluster:
-      #     cluster-name: my-eks-demo
-      #     requires: [test-eks-cluster]
+      - aws-eks/delete-cluster:
+          cluster-name: my-eks-demo
+          requires: [test-eks-cluster]
