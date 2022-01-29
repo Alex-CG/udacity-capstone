@@ -114,7 +114,7 @@ jobs:
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           get-rollout-status: true
-          resource-file-path: deploy/eks-sample-deplyment.yml
+          resource-file-path: deploy/eks-sample-deployment.yaml
           resource-name: eks-sample-linux-deployment
 
   test-deployment:
