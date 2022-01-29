@@ -232,6 +232,7 @@ workflows:
           cluster-name: my-eks-demo
           requires: [test-cluster]
       - test-deployment:
+          cluster-name: my-eks-demo
           requires: [run-deployment]
   deployment:
     jobs:
