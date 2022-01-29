@@ -229,6 +229,7 @@ workflows:
           cluster-name: my-eks-demo
           requires: [build-push-image]
       - run-deployment:
+          cluster-name: my-eks-demo
           requires: [test-cluster]
       - test-deployment:
           requires: [run-deployment]
