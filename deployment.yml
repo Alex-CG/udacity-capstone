@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capstone-site
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      #maxSurge: 25%
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: capstone-site
+    spec:
+      containers:
+      - name: capstone-site
+        image: alexcgdocker/my-capstone-site:1.0
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: capstone-site
+spec:
+  type: LoadBalancer
+  selector:
+    app: capstone-site
+  ports:
+    - port: 8000
+      targetPort: 80
+      protocol: TCP

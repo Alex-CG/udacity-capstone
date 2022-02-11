@@ -5,23 +5,6 @@ orbs:
   kubernetes: circleci/kubernetes@0.12.0
   aws-eks: circleci/aws-eks@0.2.3
 
-commands:
-
-  restore-cache-deps:
-    steps:
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-  save-cache-deps:
-    steps:
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
 jobs:
 
   build-app:
@@ -30,56 +13,26 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - restore-cache-deps
       - run:
           name: install dependencies
           command: |
-            make setup
-            . venv/bin/activate
             make install
       - run:
           name: run lint
           command: |
-            . venv/bin/activate
             make lint
-      - save-cache-deps
 
-  test-app:
-    docker:
-      - image: python:3.7.3-stretch
-    steps:
-      - checkout
-      - restore-cache-deps
-      - save-cache-deps
-      - run:
-          command: |
-            make test
-
-  scan-app:
-    docker:
-      - image: python:3.7.3-stretch
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - restore-cache-deps
-      - save-cache-deps
-      - run:
-          name: scan
-          command: |
-            . venv/bin/activate
-            make scan
-
-  build-push-image:
+  build-push-images:
     executor: docker/docker
     steps:
       - setup_remote_docker
       - checkout
       - docker/check
       - docker/build:
-          image: alexcgdocker/ml-app-capstone
+          image: alexcgdocker/my-capstone-site:1.0
       - docker/push:
           digest-path: /tmp/digest.txt
-          image: alexcgdocker/ml-app-capstone
+          image: alexcgdocker/my-capstone-site:1.0
       - run:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
@@ -114,8 +67,8 @@ jobs:
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           get-rollout-status: true
-          resource-file-path: deploy/eks-sample-deployment.yaml
-          resource-name: eks-sample-linux-deployment
+          resource-file-path: deployment.yaml
+          resource-name: deployment/capstone-site
 
   test-deployment:
     executor: aws-eks/python3
@@ -191,15 +144,11 @@ workflows:
   default:
     jobs:
       - build-app
-      - test-app:
+      - build-push-images:
           requires: [build-app]
-      - scan-app:
-          requires: [build-app]
-      - build-push-image:
-          requires: [test-app, scan-app]
       - test-cluster:
           cluster-name: eks-capstone-project
-          requires: [build-push-image]
+          requires: [build-push-images]
       - run-deployment:
           cluster-name: eks-capstone-project
           requires: [test-cluster]

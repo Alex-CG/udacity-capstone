@@ -6,13 +6,14 @@
 # Step 1:
 # Create dockerpath
 # dockerpath=<your docker ID/path>
-dockerpath=alexcgdocker/ml-app-capstone-blue
+path=my-capstone-site:1.0
+dockerpath="alexcgdocker/$path"
 
 # Step 2:  
 # Authenticate & tag
 echo "Docker ID and Image: $dockerpath"
 docker login --username alexcgdocker
-docker tag ml-app-capstone-blue $dockerpath
+docker tag $path $dockerpath
 # Step 3:
 # Push image to a docker repository
 docker push $dockerpath
