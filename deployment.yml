@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: capstone-site
-        image: alexcgdocker/my-capstone-site:1.0
+        image: alexcgdocker/my-capstone-site:1.1
         ports:
         - containerPort: 80
 ---
