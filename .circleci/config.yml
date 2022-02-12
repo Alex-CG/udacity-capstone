@@ -6,7 +6,7 @@ orbs:
 
 jobs:
 
-  build-app:
+  lint-app:
     docker:
       - image: python:3.7.3-stretch
     working_directory: ~/repo
@@ -144,9 +144,9 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-app
+      - lint-app
       - build-push-images:
-          requires: [build-app]
+          requires: [lint-app]
       - test-cluster:
           cluster-name: eks-capstone-project
           requires: [build-push-images]
