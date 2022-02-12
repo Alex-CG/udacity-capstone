@@ -29,11 +29,11 @@ jobs:
       - docker/check
       - docker/build:
           image: alexcgdocker/my-capstone-site
-          tag: "1.1"
+          tag: "1.2"
       - docker/push:
           digest-path: /tmp/digest.txt
           image: alexcgdocker/my-capstone-site
-          tag: "1.1"
+          tag: "1.2"
       - run:
           command: |
             echo "Digest is: $(</tmp/digest.txt)"
