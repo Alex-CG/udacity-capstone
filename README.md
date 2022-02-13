@@ -3,10 +3,10 @@
 # udacity-devops-eng-capstone
 Capstone - Project 5
 
-How to setup the project:
+How is the project setup:
 
-Tool used       : CircleCI
-Deployment type : Rolling update
+ * Tool used       : CircleCI
+ * Deployment type : Rolling update
 
 The deployment pipeline will include the following jobs:
 
@@ -18,6 +18,6 @@ The deployment pipeline will include the following jobs:
 
 To run the pipeline automatically just commit to the master branch of the repo.
 
-GitHub repo link  : https://github.com/Alex-CG/udacity-devops-eng-capstone
-CircleCI Pipeline : https://app.circleci.com/pipelines/github/Alex-CG/udacity-devops-eng-capstone?filter=all
+ * GitHub repo link  : https://github.com/Alex-CG/udacity-devops-eng-capstone
+ * CircleCI Pipeline : https://app.circleci.com/pipelines/github/Alex-CG/udacity-devops-eng-capstone?filter=all
  
